@@ -1,35 +1,32 @@
 import string
-
-
-def getNext(charlist, increment, max_size, ID, current):
-    count = 0
-    nxt = ""
-    if(current == ""):                                                                     
-        return charlist[increment-1+ID]                                                  
-    else:
-        for i in range(len(current)-1, -1, -1):              
-            ind = charlist.index(current[i])
-            if count == 0:
-                if ind+increment >= len(charlist):
-                    nxt = charlist[(ind+increment)%len(charlist)] + nxt
-                    increment = 1
+def getPswds(charlist, increment, pswd: str = "a"):
+    limit = len(charlist)
+    for k in range(increment):
+        remain = 1
+        new_pswd = list(pswd)
+        for i in range(len(new_pswd)-1,-1,-1):
+            if (charlist.index(new_pswd[i]) + remain) >= limit:
+                if(i != len(new_pswd)):
+                    new_pswd[i] = charlist[0]
+                    remain = 1
                 else:
-                    count = 1
-                    nxt = charlist[ind+increment] + nxt
-                    increment = 1
+                    new_pswd[i] = charlist[0]
+                    new_pswd.insert(charlist[0])
+                    remain = 0
             else:
-                nxt = current[i] + nxt
-        if count == 0:
-            nxt = charlist[0] + nxt
-        return nxt                          
+                new_pswd[i] = charlist[charlist.index(new_pswd[i]) + remain]
+                remain = 0
+            if remain == 0: break
+        pswd = "".join(new_pswd)
+    return pswd
+    
 
 
-chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
-offset = 1                                                                                 # Number of Slaves
-ID = 0                                                                                     # Id of slave
-Max_size = 8      
-pswd = "" # Max size of passwordds
-for i in range(0, 1000):
-    pswd = getNext(chars, offset, Max_size, ID, pswd)                                             # Password list to try on
-    print(pswd)
-
+chars = string.ascii_uppercase + string.ascii_lowercase + string.digits                     # Chars used to make the password
+offset = 1                                                                                  # Number of Slaves
+pswd = "b9"                                                                                  # Previous password
+pswd = getPswds(chars, offset, pswd)                                                        # Next password to try it on
+print(pswd)
+#for i in range(0,197):
+#    pswd = getPswds(chars, offset, pswd)
+#    print(pswd)
