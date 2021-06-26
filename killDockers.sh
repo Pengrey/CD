@@ -1,4 +1,12 @@
 #!/bin/sh
 
-docker stop $(awk '/Up/{printf $1"  \n"}'  <<< $(docker ps -a))
-docker rm   $(awk '/Exited/{printf $1"  \n"}'  <<< $(docker ps -a ))
+
+DOCKER_UP=$(docker ps -q)
+if [[ ${#DOCKER_UP[@]} -gt 1 ]]; then
+  docker kill $(docker ps -q)
+fi
+
+DOCKER_TORM=$(docker ps -a -q)
+if [[ ${#DOCKER_TORM} -gt 1 ]]; then
+  docker rm $(docker ps -a -q)
+fi
