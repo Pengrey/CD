@@ -19,10 +19,13 @@ ServerLocal = '127.0.1.1'
 Port = 8000
 User = 'root'
 #Send
+
 class Slave:
-    def __init__(self, timeout = 3, secret = None,MSize = 1 ):
+    MAX_PEERS = 3
+    def __init__(self, timeout = 5, secret = None,MSize = 1 ):
         #fazer dic user, pass
         #Parte do servidor
+        self.counter = 0
         """
             Secalhar nao criavamos logo a socket TCP
             Primeiro trocavamos mensagens para decidir quem tinha o maior ID (Por floding no inicio que é mais fácil depois tentar por bullying?)
@@ -54,6 +57,7 @@ class Slave:
         self.sockUDP.setsockopt(socket.IPPROTO_IP,socket.IP_MULTICAST_LOOP,0)
         self.done_UDP = False
         self.role = None
+        self.peers = set()
 
         #self.sock.bind(( MCAST_GRP, MCAST_PORT))
 
@@ -116,44 +120,63 @@ class Slave:
         global MCAST_GRP
         global MCAST_PORT
 
-        while self.role == None:
+        connectionMessage = {
+                "COMMAND":"CON",
+                "ID":self.identification,
+                "IP":(self.address,self.port)
+                }
+        print(f"ID {self.identification} Sending: {connectionMessage}")
+        self.sockUDP.sendto(pickle.dumps(connectionMessage),(MCAST_GRP,MCAST_PORT))
+
+        while not self.done_UDP:
             try:
                 payload, addr = self.sockUDP.recvfrom(1024)
             except socket.timeout:
                 payload, addr = None, None
 
-            if payload is not None:
+            # estou me a conectar
+            if payload is not None: #
                 output = pickle.loads(payload)
-                self.logger.debug("O: %s", output)
-                print(f"O: ID {self.identification} {output}")
-                print(output["IP"])
-                print(type(tuple(output["IP"])))
-                if output["command"] == "CON":
-                    if self.identification > int(output["ID"]):
+                print(f"ID {self.identification} Recv: {output}")
+                if output["COMMAND"] == "KEEP-ALIVE":
+                    self.counter = self.counter + 1
+
+                if output["COMMAND"] == "CON":
+                    self.counter = 0
+                    self.peers.add(output["ID"])
+                    print(str(self.identification) + " " + str(output["ID"]))
+                    if self.identification > output["ID"]:
                         connectionMessage = {
-                                "command":"OK",
+                                "COMMAND":"CON",
                                 "ID":self.identification,
                                 "IP":(self.address,self.port)
                                 }
-                        print(output["IP"])
-                        self.sockUDP.sendto(pickle.dumps(connectionMessage),tuple(output["IP"]))
+                        print(f"ID {self.identification} Sending: {connectionMessage}")
+                        self.sockUDP.sendto(pickle.dumps(connectionMessage),(MCAST_GRP,MCAST_PORT))
+                        self.role = "CORD"
+                        print(f"ID {self.identification} Setting Roles: {self.role}")
                     else:
-                        self.role = "Slave"
+                        self.role = "SLAVE"
+                        print(f"ID {self.identification} Setting Roles: {self.role}")
 
-            if payload is None: # Socket Timeout
+
+            else: # CON TIMEOUT then i am the coordinator
                 connectionMessage = {
-                        "command":"CON",
-                        "ID":self.identification,
-                        "IP":(self.address,self.port)
-                        }
+                    "COMMAND":"KEEP-ALIVE",
+                    "ID":self.identification,
+                }
+                print(f"ID {self.identification} Sending: {connectionMessage}")
                 self.sockUDP.sendto(pickle.dumps(connectionMessage),(MCAST_GRP,MCAST_PORT))
+                if self.counter != len(self.peers):
+                    connectionMessage = {
+                            "COMMAND":"CON",
+                            "ID":self.identification,
+                            "IP":(self.address,self.port)
+                            }
+                    print(f"ID {self.identification} Sending: {connectionMessage}")
+                    self.sockUDP.sendto(pickle.dumps(connectionMessage),(MCAST_GRP,MCAST_PORT))
+                    self.counter = 0
 
-        while not self.done_UDP:
-            payload, addr = self.socketUDP.recv()
-            if payload:
-                pass
-            else: # Socket UDP Timeout Descobrir novo Coordenador
-                pass
 
 def main (secret, MSize, identification):
     s = Slave()
@@ -167,3 +190,30 @@ if __name__ == "__main__":
     #parser.add_arguments('-s', dest='secret',type=str, help="Secret To use", default=None)
     args = parser.parse_args()
     main(args.secret,args.MaxSize,args.id)
+    """
+            if payload is not None:
+                output = pickle.loads(payload)
+                self.logger.debug("O: %s", output)
+                print(f"O: ID {self.identification} {output}")
+                if output["command"] == "CON":
+                    if self.identification > int(output["ID"]):
+                        connectionMessage = {
+                                "command":"OK",
+                                "ID":self.identification,
+                                "IP":(self.address,self.port)
+                                }
+                        print(f"ID {self.identification} Sending: {connectionMessage}")
+                        self.sockUDP.sendto(pickle.dumps(connectionMessage),tuple(output["IP"]))
+                    else:
+                        self.role = "Slave"
+
+            if payload is None: # Socket Timeout
+                connectionMessage = {
+                        "command":"OK",
+                        "ID":self.identification,
+                        "IP":(self.address,self.port)
+                        }
+                print(f"ID {self.identification} sending: {connectionMessage}")
+                self.sockUDP.sendto(pickle.dumps(connectionMessage),(MCAST_GRP,MCAST_PORT))
+
+    """
