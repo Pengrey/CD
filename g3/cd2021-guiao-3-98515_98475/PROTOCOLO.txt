@@ -1,0 +1,8 @@
+Class, Mensagem, Explicação
+PutMsg, {"command": "put", "topic": topic, "val": val}, Mensagem destinada ao broker para a publicação de um valor "val" no tópico "topic"
+GetDataMsg, {"command": "get", "topic": topic}, Mensagem destinada ao broker para obtenção do último valor no tópico "topic"
+DataMsg, {"command": "data", "data": data}, Mensagem do broker para o midleware com a resposta à mensagem "GetData"
+SubMsg, {"command": "sub", "topic": topic}, Mensagem destinada ao broker para adicionar um novo subscritor à lista de subscritores do tópico "topic"
+UnSubMsg, {"command": "unsub", "topic": topic}, Mensagem destinada ao broker para remover um subscritor à lista de subscritores do tópico "topic"
+ListRequestMsg, {"command": "listReq"}, Mensagem destinada ao broker para pedido da lista de todos os tópicos
+TopicsMsg, {"command": "topics", "topics": topics}, Mensagem destinada ao midleware com a resposta à mensagem "ListRequest"
