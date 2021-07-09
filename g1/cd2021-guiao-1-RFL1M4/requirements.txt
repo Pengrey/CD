@@ -1,6 +1,0 @@
-mockselector
-mock
-pytest
-freezegun
-mock
-pexpect
